@@ -1,7 +1,7 @@
-
-
+import matplotlib.pyplot as plt
 import numpy as np
 import itertools as it
+import cv2
 
 def format_ouput(A):
     return f"""
@@ -111,13 +111,38 @@ class SudokoSolover():
             self.updateA()
         return self.A
 
+if __name__ == "__main__":
+    
+    AA=np.loadtxt("in1.txt", delimiter=',', dtype=int)
+    solver=SudokoSolover(AA)
+    solution = solver.solve()
+
+    img = np.zeros((900,900,3), np.uint8)
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    org = (50, 50)
+    fontScale = 1
+    color = (255, 0, 0)
+    thickness = 2
+
+    cv2.line(img,(310,0),(310,900),color,5)
+    cv2.line(img,(610,0),(610,900),color,5)
+    cv2.line(img,(0,300),(900,300),color,5)
+    cv2.line(img,(0,600),(900,600),color,5)
+
+    for i in range(8):
+      cv2.line(img,(110+i*100,0),(110+i*100,900),color,1)
+      cv2.line(img,(0,98+i*100),(900,98+i*100),color,1)
 
 
+    for row in range(9):
+        for col in range(9):
+            loc = (100*row+50, 100*col+50)
+            img = cv2.putText(img, f"{solution[row][col]}", loc, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
-AA=np.loadtxt("in1.txt", delimiter=',', dtype=int)
-solver=SudokoSolover(AA)
-solution = solver.solve()
-print("Solution\n", solution)
+    plt.imshow(img)
+
+    print("Solution\n", solution)
 
 

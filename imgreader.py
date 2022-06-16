@@ -8,7 +8,7 @@ import cv2
 import numpy as np
 import torch
 from models import FLAT, CNN
-import torch.nn.functional as F
+
 
 
 def display_image(img):
@@ -201,10 +201,10 @@ def scale_and_centre(img, size, margin=20, background=0):
     return cv2.resize(img, (size, size))
 
 
-def extract():
+def extract(img):
     # print("Enter image name: ")
     # image_url = input()
-    img = cv2.imread('sudoku_1.jpeg')
+
     processed_sudoku = processing(img)
     sudoku = find_corners(processed_sudoku)
     transformed = perspective_transform(img, sudoku)
@@ -215,23 +215,12 @@ def extract():
     return sudoku
 
 
-def cell2pred(resized):
 
-    x = resized / resized.max()
-    x = x.astype(float)
-    t = torch.from_numpy(x)
-    t = t[None, None, :]
-    t = t.type(torch.FloatTensor)
-    logits = model(t)
-    probabilities = F.softmax(logits, dim=-1)
-    max_prob = torch.max(probabilities)
-    if max_prob<0.5:
-        return 0
-    index = torch.argmax(probabilities)
-    return index
 
 if __name__ == '__main__':
-    result = extract()
+
+    img = cv2.imread('sudoku_1.jpeg')
+    result = extract(img)
 
     model = CNN() # we do not specify pretrained=True, i.e. do not load default weights
     model.load_state_dict(torch.load('CNN_MNIST.pth'))

@@ -1,15 +1,26 @@
 import streamlit as st
 import numpy as np
-import pandas as pd
-from main import SudokoSolover, format_ouput
+from logic import SudokoSolover
 from PIL import Image
 
 from imgreader import extract
 from img_interpreter import CNN_interpret, intepretation2text, render_solution
 
+def read_manual_input(placeholders, options, c_cols):
+    for i_col in range(9):
+            with c_cols[i_col]:
+                for i_row in range(9):
+                    key = f"{i_row}_{i_col}"
+                    options[i_row][i_col] = placeholders[i_row][i_col].selectbox(
+                        '',
+                        ('', 1, 2, 3, 4, 5, 6, 7, 8, 9),
+                        key=key,
+                        index=0)
 
 if 'mode' not in st.session_state:
     st.session_state['mode'] = None
+if 'cam_input' not in st.session_state:
+    st.session_state['cam_input'] = None
 
 
 
@@ -33,63 +44,40 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
 st.session_state.mode = st.selectbox('Select input method', ('Manual', "Read by camera"))
-
-
-if st.session_state.mode=='Manual':
-    st.text("Manual")
-else:
-    st.text("Camera")
-    cam_input = st.camera_input(label='aa')
-
-manual_button = st.button("Enter manually instead")
-
-# placeholder = st.empty()
-#test = placeholder.text_input(label='')
-# test = placeholder.selectbox('', ('', 1, 2, 3, 4, 5, 6, 7, 8, 9), index=3, key='a11')
-
-
 placeholders=[[None for _ in range(9)] for _ in range(9)]
 options=[[None for _ in range(9)] for _ in range(9)]
-
 c1, c2, c3, s1, c4, c5, c6, s2, c7, c8, c9 = st.columns([5,5,5,1,5,5,5, 1, 5,5,5])
 c_cols = [c1, c2, c3, c4, c5, c6, c7, c8, c9]
 
+# Create placeholders
 for i_col in range(9):
     with c_cols[i_col]:
         for i_row in range(9):
             placeholders[i_row][i_col] = st.empty()
             if (i_row+1)%3==0 and i_row!=8:
                 st.markdown("")
-                #st.markdown("<p><span style='background-color: #0000ff;'>---</span></p>",unsafe_allow_html=True)
 
 solve_button = st.button("Solve")
 
 
+if st.session_state.mode=='Manual':
+    st.text("Manual")
+    read_manual_input(placeholders, options, c_cols)
+else:
+    st.text("Camera")
+    st.session_state.cam_input = st.camera_input(label='aa')
 
-if cam_input:
-    img = Image.open(cam_input)
+
+if st.session_state.cam_input:
+    img = Image.open(st.session_state.cam_input)
     # To convert PIL Image to numpy array:
     img_array = np.array(img)
     img_array = np.rot90(img_array)
     extracted = extract(img_array)
 
-    # st.text("Here's what has been detected")
-    # cols = st.columns(9)
-    # for icol in range(9):
-    #     with cols[icol]:
-    #         for irow in range(9):
-    #           #st.text(extracted[irow][icol].shape)
-    #           st.image(extracted[irow][icol])
 
-
-
-    #st.text(f"{extracted}")
     interpretations = CNN_interpret(extracted)
-    #st.text(intepretation2text(interpretations))
-
-
 
     for i_col in range(9):
         with c_cols[i_col]:
@@ -102,38 +90,38 @@ if cam_input:
                     index=int(interpretations[i_row][i_col]))
 
 
-if manual_button:
-    for i_col in range(9):
-        with c_cols[i_col]:
-            for i_row in range(9):
-                key = f"{i_row}_{i_col}"
-                options[i_row][i_col] = placeholders[i_row][i_col].selectbox(
-                    '',
-                    ('', 1, 2, 3, 4, 5, 6, 7, 8, 9),
-                    key=key,
-                    index=0)
-
-
 
 if solve_button:
 
     arr = [[val if type(val)==int else 0 for val in row ] for row in options]
-    ###st.text(f"{arr}")
+
+    # For debug purposes
+    # arr = [
+    #     [5, 3, 0,  0, 7, 0,  0, 0, 0],
+    #     [6, 0, 0,  1, 9, 5,  0, 0, 0],
+    #     [0, 9, 8,  0, 0, 0,  0, 6, 0],
+    #
+    #     [8, 0, 0,  0, 6, 0,  0, 0, 3],
+    #     [4, 0, 0,  8, 0, 3,  0, 0, 1],
+    #     [7, 0, 0,  0, 2, 0,  0, 0, 6],
+    #
+    #     [0, 6, 0,  0, 0, 0,  2, 8, 0],
+    #     [0, 0, 0,  4, 1, 9,  0, 0, 5],
+    #     [0, 0, 0,  0, 8, 0,  0, 7, 9],
+    #  ]
     A=np.array(arr)
-    ###st.text(f"{A}")
 
     solver = SudokoSolover(A)
     solution = solver.solve()
     if 0 in solution:
         st.error(f"Could not solve sudoku. Check input!")
         with st.expander("See solution"):
-            img = render_solution(solution)
+            img = render_solution(arr, solution)
             st.image(img)
     else:
         st.success(f"Solution found!")
         st.balloons()
         with st.expander("See solution"):
-            img = render_solution(solution)
+            img = render_solution(arr, solution)
             st.image(img)
-    #st.text(f"Solution:\n{format_ouput(solution)}")
 
