@@ -24,12 +24,14 @@ if 'cam_input' not in st.session_state:
 
 
 
-st.title("Sudoko Solver")
+st.title("Sudoku Solver")
 st.markdown("""
-For the time being, you need to enter the sudoko manually.
-I plan to add computer vision input in the future.
-Once you entered what you have, click "Solve" on the bottom
+You can use this service if you ever get stuck on a Sudoku.
+For the time being, the full solution is revealed, but I plan to make fields visible one by one.  
+The Sudoko can either be entered manually or via camera/webcam.
 """)
+
+st.warning("The camera input does not work reliably yet, you probably have to fix the result. An update is coming.")
 
 st.markdown(
     """
@@ -62,10 +64,8 @@ solve_button = st.button("Solve")
 
 
 if st.session_state.mode=='Manual':
-    st.text("Manual")
     read_manual_input(placeholders, options, c_cols)
 else:
-    st.text("Camera")
     st.session_state.cam_input = st.camera_input(label='aa')
 
 
