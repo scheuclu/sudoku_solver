@@ -7,8 +7,13 @@ import os
 from google.cloud import vision
 import asyncio
 
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/lukas/projects/sudoko_solver/access_key.json'
-client = vision.ImageAnnotatorClient()
+from google.oauth2 import service_account
+from google.cloud import storage
+import streamlit as st
+
+# Create API client.
+credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
+client = storage.Client(credentials=credentials)
 
 def intepretation2text(result):
     s=""
