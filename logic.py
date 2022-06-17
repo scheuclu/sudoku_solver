@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import itertools as it
 import cv2
@@ -141,7 +140,6 @@ if __name__ == "__main__":
             img = cv2.putText(img, f"{solution[row][col]}", loc, font, fontScale, color, thickness, cv2.LINE_AA)
 
 
-    plt.imshow(img)
 
     print("Solution\n", solution)
 
