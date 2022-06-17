@@ -5,9 +5,12 @@ and returns the array of the cells of the sudoku
 """
 
 import cv2
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from models import FLAT, CNN
+
+from img_interpreter import cell2pred
 
 
 
@@ -219,33 +222,56 @@ def extract(img):
 
 if __name__ == '__main__':
 
-    img = cv2.imread('sudoku_1.jpeg')
+    img = cv2.imread('photo1.jpeg')
     result = extract(img)
 
-    model = CNN() # we do not specify pretrained=True, i.e. do not load default weights
-    model.load_state_dict(torch.load('CNN_MNIST.pth'))
-    model.eval()
+    img = result[0][8]
+    plt.imshow(img)
+    img_encode = cv2.imencode('.png', img)[1]
+    content = img_encode.tobytes()
 
-    img = result[1][7]
-    resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-    x = resized / resized.max()
-    x = x.astype(float)
-    t = torch.from_numpy(x)
-    t = t[None, None, :]
-    t = t.type(torch.FloatTensor)
-    logits = model(t)
+    import os
+    from google.cloud import vision
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/lukas/projects/sudoko_solver/access_key.json'
+    client = vision.ImageAnnotatorClient()
 
-    for row in range(9):
-        for col in range(9):
-            img=result[row][col]
-            img = img[5:45][5:45]
-            resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-            cv2.imwrite(f"cells/{row}_{col}.png", resized)
-            x = resized / resized.max()
-            if x.std().round(2)>0.2:
-              pred=cell2pred(resized)
-              print(f"{pred} ", end='')
-            else:
-                print(f"0 ", end='')
+    image = vision.Image(content=content)
 
-        print("")
+    response = client.text_detection(image=image)
+    texts = response.text_annotations
+    print('Texts:')
+    if len(texts)>0:
+       print(texts[0].description)
+    else:
+       print("Nothing")
+
+
+
+
+    # model = CNN() # we do not specify pretrained=True, i.e. do not load default weights
+    # model.load_state_dict(torch.load('CNN_MNIST.pth'))
+    # model.eval()
+    #
+    # img = result[1][7]
+    # resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
+    # x = resized / resized.max()
+    # x = x.astype(float)
+    # t = torch.from_numpy(x)
+    # t = t[None, None, :]
+    # t = t.type(torch.FloatTensor)
+    # logits = model(t)
+    #
+    # for row in range(9):
+    #     for col in range(9):
+    #         img=result[row][col]
+    #         img = img[5:45][5:45]
+    #         resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
+    #         cv2.imwrite(f"cells/{row}_{col}.png", resized)
+    #         x = resized / resized.max()
+    #         if x.std().round(2)>0.2:
+    #           pred=cell2pred(resized)
+    #           print(f"{pred} ", end='')
+    #         else:
+    #             print(f"0 ", end='')
+    #
+    #     print("")

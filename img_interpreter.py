@@ -3,6 +3,12 @@ import torch
 from models import FLAT, CNN
 import torch.nn.functional as F
 import numpy as np
+import os
+from google.cloud import vision
+import asyncio
+
+os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = '/Users/lukas/projects/sudoko_solver/access_key.json'
+client = vision.ImageAnnotatorClient()
 
 def intepretation2text(result):
     s=""
@@ -11,6 +17,41 @@ def intepretation2text(result):
             s=s+f"{result[row][col]} "
         s=s+"\n"
     return s
+
+async def interpret_cell(cellimage):
+    img_encode = cv2.imencode('.png', cellimage)[1]
+    content = img_encode.tobytes()
+    image = vision.Image(content=content)
+    response = client.text_detection(image=image)
+    # print(response)
+    texts = response.text_annotations
+    if len(texts) == 0:
+        return 0
+    try:
+        detected = texts[0].description
+        if int(detected)<10 and int(detected)>0:
+            return int(detected)
+        return 0
+    except:
+        return 0
+
+async def GCP_interpret(extracted):
+
+    flatttened = []
+    for irow in range(9):
+        for icol in range(9):
+            flatttened.append(extracted[irow][icol])
+    flat_results = await asyncio.gather(*map(interpret_cell, flatttened))
+    result = []
+    for irow in range(9):
+        row = []
+        for icol in range(9):
+            row.append(flat_results[irow*9+icol])
+        result.append(row)
+
+    return result
+
+
 
 def cell2pred(model, resized):
 
@@ -28,28 +69,28 @@ def cell2pred(model, resized):
     return index
 
 
-def CNN_interpret(extracted):
-
-    model = CNN() # we do not specify pretrained=True, i.e. do not load default weights
-    model.load_state_dict(torch.load('CNN_MNIST.pth'))
-    model.eval()
-
-    result = [[None for _ in range(9)] for _ in range(9)]
-
-    for row in range(9):
-        for col in range(9):
-            img=extracted[row][col]
-            img = img[10:40][10:40]
-            resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-            cv2.imwrite(f"cells/{row}_{col}.png", resized)
-            x = resized / resized.max()
-            if x.std().round(2)>0.2:
-                pred=cell2pred(model, resized)
-                result[row][col]=pred
-            else:
-                result[row][col] = 0
-
-    return result
+# def CNN_interpret(extracted):
+#
+#     model = CNN() # we do not specify pretrained=True, i.e. do not load default weights
+#     model.load_state_dict(torch.load('CNN_MNIST.pth'))
+#     model.eval()
+#
+#     result = [[None for _ in range(9)] for _ in range(9)]
+#
+#     for row in range(9):
+#         for col in range(9):
+#             img=extracted[row][col]
+#             img = img[10:40][10:40]
+#             resized = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
+#             cv2.imwrite(f"cells/{row}_{col}.png", resized)
+#             x = resized / resized.max()
+#             if x.std().round(2)>0.2:
+#                 pred=cell2pred(model, resized)
+#                 result[row][col]=pred
+#             else:
+#                 result[row][col] = 0
+#
+#     return result
 
 
 def render_solution(initial, solution):
@@ -78,13 +119,13 @@ def render_solution(initial, solution):
         for col in range(9):
             loc = (100 * col + 50, 100 * row + 50)
             sol = solution[row][col]
-            print("init:", initial[row][col])
+            ###print("init:", initial[row][col])
             if int(initial[row][col])==0 or initial[row][col]=='':
                 color = (100, 100, 100)
                 thickness = 2
             else:
-                color = (100, 100, 100)
-                thickness = 2
+                color = (0, 0, 0)
+                thickness = 4
 
             if sol==0:
                 t=''

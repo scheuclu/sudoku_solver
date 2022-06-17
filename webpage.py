@@ -2,9 +2,10 @@ import streamlit as st
 import numpy as np
 from logic import SudokoSolover
 from PIL import Image
+import asyncio
 
 from imgreader import extract
-from img_interpreter import CNN_interpret, intepretation2text, render_solution
+from img_interpreter import GCP_interpret, intepretation2text, render_solution
 
 def read_manual_input(placeholders, options, c_cols):
     for i_col in range(9):
@@ -46,7 +47,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.session_state.mode = st.selectbox('Select input method', ('Manual', "Read by camera"))
+st.session_state.mode = st.selectbox('Select input method', ("Read by camera", 'Manual'))
 placeholders=[[None for _ in range(9)] for _ in range(9)]
 options=[[None for _ in range(9)] for _ in range(9)]
 c1, c2, c3, s1, c4, c5, c6, s2, c7, c8, c9 = st.columns([5,5,5,1,5,5,5, 1, 5,5,5])
@@ -66,7 +67,7 @@ solve_button = st.button("Solve")
 if st.session_state.mode=='Manual':
     read_manual_input(placeholders, options, c_cols)
 else:
-    st.session_state.cam_input = st.camera_input(label='aa')
+    st.session_state.cam_input = st.camera_input(label='')
 
 
 if st.session_state.cam_input:
@@ -76,18 +77,24 @@ if st.session_state.cam_input:
     img_array = np.rot90(img_array)
     extracted = extract(img_array)
 
-
-    interpretations = CNN_interpret(extracted)
+    interpretations = asyncio.run(GCP_interpret(extracted))
+    #interpretations = GCP_interpret(extracted)
 
     for i_col in range(9):
         with c_cols[i_col]:
             for i_row in range(9):
-                key=f"{i_row}_{i_col}"
+                st.image(extracted[i_row][i_col])
+                key=f"selct_{i_row}_{i_col}"
+                index = interpretations[i_row][i_col]
                 options[i_row][i_col]=placeholders[i_row][i_col].selectbox(
                     '',
                     ('', 1, 2, 3, 4, 5, 6, 7, 8, 9),
                     key=key,
-                    index=int(interpretations[i_row][i_col]))
+                    index=index)
+
+    #st.text(f"{intepretation2text(interpretations)}")
+                # key=f"{i_row}_{i_col}"
+
 
 
 
