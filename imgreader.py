@@ -5,7 +5,6 @@ and returns the array of the cells of the sudoku
 """
 
 import cv2
-import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from models import FLAT, CNN
@@ -226,7 +225,7 @@ if __name__ == '__main__':
     result = extract(img)
 
     img = result[0][8]
-    plt.imshow(img)
+    ###plt.imshow(img)
     img_encode = cv2.imencode('.png', img)[1]
     content = img_encode.tobytes()
 
