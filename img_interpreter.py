@@ -13,7 +13,7 @@ import streamlit as st
 
 # Create API client.
 credentials = service_account.Credentials.from_service_account_info(st.secrets["gcp_service_account"])
-cient = vision.ImageAnnotatorClient(credentials=credentials)
+client = vision.ImageAnnotatorClient(credentials=credentials)
 
 def intepretation2text(result):
     s=""
